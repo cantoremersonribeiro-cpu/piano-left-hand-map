@@ -252,4 +252,37 @@ src="https://www.facebook.com/tr?id=3779607118846569&ev=PageView&noscript=1"
 
 </script>
 <script>document.querySelectorAll('a[href*="pay.hotmart.com"]').forEach(function(a){a.addEventListener('click',function(){if(window.fbq)fbq('track','InitiateCheckout',{value:9,currency:'USD'});});});</script>
+<!-- Mapa do ROI · rastreio sck (passa o ID do anúncio da Meta para o checkout da Hotmart) -->
+<script>
+(function () {
+  try {
+    var q = new URLSearchParams(location.search), k = 'mr_sck';
+    // 1) guarda o código que veio do anúncio (vale mesmo se a pessoa navegar por outras páginas suas)
+    var v = q.get('sck');
+    if (!v) { // sem sck: monta a partir das UTMs padrão do anúncio (campanha|id, conjunto|id, anúncio|id)
+      var id = function (n) { var x = q.get(n); if (!x) return ''; var p = x.split('|'); return p[p.length - 1].replace(/[^0-9]/g, ''); };
+      var c = id('utm_campaign'), m = id('utm_medium'), a = id('utm_content');
+      if (c || m || a) v = [c, m, a].join('_');
+    }
+    if (v) sessionStorage.setItem(k, v);
+    v = v || sessionStorage.getItem(k);
+    if (!v) return;
+    // 2) acrescenta nos links da Hotmart (hotmart.com, pay.hotmart.com, go.hotmart.com...)
+    function ajusta(a) {
+      try {
+        var u = new URL(a.href, location.href);
+        if (!/(^|\.)hotmart\.com$/i.test(u.hostname)) return;
+        if (!u.searchParams.has('sck')) { u.searchParams.set('sck', v); a.href = u.toString(); }
+      } catch (e) {}
+    }
+    function varre() { var as = document.querySelectorAll('a[href]'); for (var i = 0; i < as.length; i++) ajusta(as[i]); }
+    varre();
+    // 3) botões que o editor cria depois do carregamento
+    new MutationObserver(varre).observe(document.documentElement, { childList: true, subtree: true });
+    // 4) garantia na hora do clique
+    document.addEventListener('click', function (e) { var a = e.target.closest && e.target.closest('a[href]'); if (a) ajusta(a); }, true);
+  } catch (e) {}
+})();
+</script>
+
 </body></html>
